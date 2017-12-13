@@ -28,7 +28,28 @@ void initiateUDPConnection(void) {
     Serial.print("Listening on port ");
     Serial.println(udpPort);
 }
+void listenUdpCommand(void){
+    packetSize = Udp.parsePacket();
+    if (packetSize) {
+        Serial.print("Received packet of size ");
+        Serial.println(packetSize);
+        Serial.print("From ");
+        IPAddress remoteIp = Udp.remoteIP();
+        Serial.print(remoteIp);
+        Serial.print(", port ");
+        Serial.println(Udp.remotePort());
 
+        // read the packet into packetBufffer
+        int len = Udp.read(packetBuffer, 255);
+        if (len > 0) {
+          packetBuffer[len] = 0;
+        }
+        Serial.println("Contents:");
+        Serial.println(packetBuffer);
+    } else {
+        packetBuffer[0] = '!';
+    }
+  }
 
 void setup()
 {
@@ -40,6 +61,8 @@ void setup()
 
 void loop()
 {
+  // listen for command to start sending data
+  listenUdpCommand();
  // turn the LED on (HIGH is the voltage level)
  digitalWrite(LED_BUILTIN, HIGH);
  // wait for a second
