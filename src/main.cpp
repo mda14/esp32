@@ -2,7 +2,6 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
-#define LED_BUILTIN 1  //or D2 but display an error
 // WiFi and UDP constants and variables
 WiFiUDP Udp;
 const char *APssid = "guderesearch";
@@ -12,6 +11,9 @@ char incomingPacket[255];
 int packetSize;
 boolean sendit=false;
 char packetBuffer[255];          // buffer to hold incoming packet
+unsigned long starttime = 0;
+uint8_t ReplyBuffer[50] = "hello world";
+int connected = 0;
 
 void initiateUDPConnection(void) {
     WiFi.mode(WIFI_AP);    // initialize ESP module in AP mode
@@ -20,17 +22,20 @@ void initiateUDPConnection(void) {
     WiFi.softAP(APssid,APpassword);
     Serial.println("Access point started");
     IPAddress ip = WiFi.localIP();
-    Serial.print(F("IP Address: "));
+    Serial.print("IP Address: ");
     Serial.println(ip);
 
     // if you get a connection, report back via serial:
-    Udp.begin(udpPort);
+    connected = Udp.begin(udpPort);
     Serial.print("Listening on port ");
     Serial.println(udpPort);
+    Serial.print("Connected = ");
+    Serial.println(connected);
+
 }
 void listenUdpCommand(void){
     packetSize = Udp.parsePacket();
-    if (packetSize) {
+    if (packetSize != 0) {
         Serial.print("Received packet of size ");
         Serial.println(packetSize);
         Serial.print("From ");
@@ -47,29 +52,38 @@ void listenUdpCommand(void){
         Serial.println("Contents:");
         Serial.println(packetBuffer);
     } else {
+        //Serial.print("no data received");
         packetBuffer[0] = '!';
     }
   }
 
+  void sendUdp(void){
+    // send a reply, to the IP address and port that sent us the packet we received
+    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+    Udp.write(ReplyBuffer, 11);
+    Udp.endPacket();
+  }
+
 void setup()
 {
- // initialize LED digital pin as an output.
- Serial.begin(115200);
- pinMode(LED_BUILTIN, OUTPUT);
- initiateUDPConnection();
+  Serial.begin(115200);
+  initiateUDPConnection();
 }
 
 void loop()
 {
   // listen for command to start sending data
   listenUdpCommand();
- // turn the LED on (HIGH is the voltage level)
- digitalWrite(LED_BUILTIN, HIGH);
- // wait for a second
- delay(1000);
- // turn the LED off by making the voltage LOW
- digitalWrite(LED_BUILTIN, LOW);
- Serial.println("Blink");
-  // wait for a second
- delay(1000);
+  if (sendit == false){
+      if (strcmp(packetBuffer, "start") == 0) {
+            sendit = true;
+            Serial.println("Logging started");
+            starttime=millis();
+            sendUdp();
+          }
+        }
+  // if (connected == 1) {
+  //
+  // }
+  delay(1000);
 }
