@@ -12,7 +12,7 @@ int packetSize;
 boolean sendit=false;
 char packetBuffer[255];          // buffer to hold incoming packet
 unsigned long starttime = 0;
-uint8_t ReplyBuffer[50] = "hello world";
+uint8_t ReplyBuffer[50];
 int connected = 0;
 
 void initiateUDPConnection(void) {
@@ -60,7 +60,7 @@ void listenUdpCommand(void){
   void sendUdp(void){
     // send a reply, to the IP address and port that sent us the packet we received
     Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(ReplyBuffer, 11);
+    Udp.write(ReplyBuffer, 50);
     Udp.endPacket();
   }
 
@@ -68,6 +68,10 @@ void setup()
 {
   Serial.begin(115200);
   initiateUDPConnection();
+
+  for (uint8_t i=0;i<50;i++){
+    ReplyBuffer[i]=i;
+  }
 }
 
 void loop()
